@@ -6,9 +6,15 @@ from threading import Thread
 def client(address):
     clientsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     
-    clientsock.connect(address)
-    nickName = input('input your nickname: ')  
-    clientsock.send(nickName.encode())
+    try:
+        clientsock.connect(address)
+    except:
+        print ("connect error")
+        exit()
+    casecontrol = input('welcome server,you can login or new ')  
+    for task in switch(casecontrol): 
+        if case (login):
+            
     
     
             
