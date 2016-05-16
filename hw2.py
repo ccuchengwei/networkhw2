@@ -9,13 +9,14 @@ def server(sp):
     listen = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     listen.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        listen.bind(('', sp))    #we want to send from port 68
+        listen.bind(('', int(sp)))    #we want to send from port 68
     except Exception as e:
         print('port {} in use...'.format(sp))
         listen.close()
         input('press any key to quit...')
         exit()
     print('Listening at {}'.format(listen.getsockname()))
+    listen.close()
     
 if  __name__ == '__main__':
     choice={'client':client , 'server':server}
