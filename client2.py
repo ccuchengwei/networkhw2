@@ -33,7 +33,7 @@ def client(address):
                     if check == '0':
                         print("Name is used!")
                     else:
-                        mainroom(clientsock,user)
+                        break
 
 
 def login(clientsock):
@@ -50,30 +50,35 @@ def login(clientsock):
             print("error")
 def mainroom(clientsock,user):
     print("Welcome "+user)
-    th1 = threading.Thread(target=sendThreadFunc,args=(clientsock,user))  
+    
     th2 = threading.Thread(target=recvThreadFunc,args=(clientsock,user))
-    threads = [th1, th2]  
-    for t in threads :  
-        t.setDaemon(True)  
-        t.start()  
-    t.join()  
+    cond1 = threading.Condition()
+    th1 = sendThreadFunc(clientsock,cond1,False)
 
 
-def sendThreadFunc(clientsock,user):
-    time.sleep(0.2)
-    check = 0
-    while True: 
-        doMsg = input("do:")
-        clientsock.send(doMsg.encode())
-        time.sleep(0.2)
-        
+class sendThreadFunc(threading.Thread):
+    def __init__(self,clientsock,cond1,paused1):
+        threading.Thread.__init__(self)
+        self.con = clientsock
+        self.pause_cond = cond1
+        self.paused = paused1                
+    def run(self)
+        while True:   
+            while paused1:
+                pause_cond1.wait()
+            doMsg = input("do:")
+            self.con.send(doMsg.encode())
+
 
 def recvThreadFunc(clientsock,user):
+    global paused1
+    global pause_cond1
     while True:
         recvMsg = clientsock.recv(1024).decode()
         print(recvMsg)
-
-
+        paused1 = False
+        pause_cond1.notify()
+        pause_cond1.release()
 
                 
     
