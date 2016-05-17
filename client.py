@@ -1,7 +1,8 @@
 
 
-import argparse,socket,time,re,queue
+import argparse,socket,time,re
 from threading import Thread
+from getpass import getpass
 
 def client(address):
     clientsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -11,10 +12,19 @@ def client(address):
     except:
         print ("connect error")
         exit()
-    casecontrol = input('welcome server,you can login or new ')  
-    for task in switch(casecontrol): 
-        if case (login):
-            
+    clientsock.send(b'1')
+    casecontral = input('login or new:')  
+   
+    if casecontral == 'login':
+        while True:
+            user = input("Name:")
+            pw = getpass("password:")
+            domessage = 'login {},{}'.format(user,pw)
+            print(domessage)
+            clientsock.send(domessage.encode())
+            check = clientsock.recv(1024).decode
+            print(check)
+          
     
     
             

@@ -6,8 +6,9 @@ from threading import Thread
 
 condb = sqlite3.connect('user.db')
 print ("connect database success")
+conlist = list()
 def server(address):
-    global conlist = list()
+    
     slisten = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     slisten.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
@@ -22,18 +23,28 @@ def server(address):
     print('Listening at {}'.format(slisten.getsockname()))
     while True:
         connection, addr = slisten.accept()
-        print('Accept a new connection', connection.getsockname(), connection.fileno())        
+        print('Accept a new connection', connection.getsockname(), connection.fileno())
+        buf = connection.recv(1024).decode()
+        if buf == '1' :
+            print(0.0)
+            thread = service(connection,connection.fileno())
+            thread.start()
             
     slisten.close()
 
 class service(Thread):
     def __init__(self, con, conid):
+        Thread.__init__(self)
         self.con = con
         self.conid = conid
     def run(self):
-        print("welcome server,you can login or new")
+        con = self.con
         do = con.recv(1024)
-        
+        print(do.decode)
+        if re.match('login {.*},{.*}',do.decode()):
+            print('123')
+        else:
+            print('321')
     
     
 if  __name__ == '__main__':
