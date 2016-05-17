@@ -16,15 +16,28 @@ def client(address):
     casecontral = input('login or new:')  
    
     if casecontral == 'login':
-        while True:
-            user = input("Name:")
-            pw = getpass("password:")
-            domessage = 'login {},{}'.format(user,pw)
-            print(domessage)
-            clientsock.send(domessage.encode())
-            check = clientsock.recv(1024).decode
-            print(check)
-          
+        
+        user = input("Name:")
+        pw = getpass("password:")
+        domessage = 'login {},{}'.format(user,pw)
+        print(domessage)
+        clientsock.send(domessage.encode())
+        check = clientsock.recv(1024).decode
+        print(check)
+    elif casecontral == 'new':
+       
+        user = input("Name:")
+        pw = getpass("password:")
+        pwconfirm = getpass("confirm password:")
+        if(pw != pwconfirm):
+            continue
+        domessage = 'new {},{}'.format(user,pw)
+        print(domessage)
+        clientsock.send(domessage.encode())
+        check = clientsock.recv(1024).decode()
+        if check == '0':
+            print("Name is used!")
+
     
     
             
