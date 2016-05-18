@@ -79,7 +79,7 @@ class checklogin(Thread):
             
 
 def service(user,con,condb):
-
+    # condb.execute('''CREATE TABLE message (ID INTEGER PRIMARY KEY, USER TEXT, Sendto TEXT,Msg TEXT);''')
     sql = "SELECT * FROM message WHERE Sendto = '{}'".format(user)
     result = condb.execute(sql)
     for row in result:
@@ -106,7 +106,7 @@ def service(user,con,condb):
                 for row in condb.execute("SELECT * FROM friend_list"):
                     print (row)
             elif re.match('send (.*) (.*)',doMsg):
-                # condb.execute('''CREATE TABLE message (ID INTEGER PRIMARY KEY, USER TEXT, Sendto TEXT,Msg TEXT);''')
+                
                 sendMsg = re.match('send (.*) (.*)',doMsg)
                 if condict.get(sendMsg.group(1)):
                     con2 = condict.get(sendMsg.group(1))
@@ -128,6 +128,10 @@ def service(user,con,condb):
                     if response_check == "yestalk":
                         chatroom(user,con,con2)
                         break
+                    elif response_check == "notalk":
+                        responseno = "{} Response NO!".format(talkWho)
+                        con.send(responseno.encode())
+                        break
                 
             elif re.match('invitetalk from (.*)',doMsg):
                 talkMsg = re.match('invitetalk from (.*)',doMsg)
@@ -140,10 +144,60 @@ def service(user,con,condb):
                         con2.send("yestalk".encode())
                         chatroom(user,con,con2)
                         break
+                    elif response_check == 'N':
+                        
+                        con2.send("notalk".encode())
+                        break
                     
                     
-                
-            
+            elif re.match('sendfile (.*) (.*)',doMsg):
+                sendfileMsg = re.match('sendfile (.*) (.*)',doMsg)
+                sendfileWho = sendfileMsg.group(1)
+                con2 = condict.get(sendfileWho)
+                checkMsg = "{} sendfile {}".format(user,sendfileMsg.group(2))
+                con2.send(checkMsg.encode())
+                con.send("\nwaiting for response...".encode())
+                while True:
+                    response_check = con.recv(1024).decode()
+                    if response_check == "yesrecv":
+                        
+                        con.send("transmissionfile".encode())
+                        filesize = con.recv(1024).decode()
+                        con2.send(filesize.encode())
+                        fcsize = 0
+                        while True:
+                            data = con.recv(1024)
+                            fcsize += len(data) 
+                            if not data:
+                                con.send("end of file transmisson")
+                            else:
+                                con2.send(data)
+                                progressMsg = "\r {}% of {} transmitted...".format(fcsize/filesize*100,sendfileMsg.group(2))
+                                con.send(progressMsg.encode())
+                            
+                        break
+                    elif response_check == "norecv":
+                        responseno = "{} Response NO!".format(talkWho)
+                        con.send(responseno.encode())
+                        break
+                        
+                        
+            elif re.match('(.*) sendfile (.*)',doMsg):
+                recvfileMsg = re.match('(.*) sendfile (.*)',doMsg)
+                con2 = condict.get(recvfileMsg.group(1))
+                while True:
+                    response_check = con.recv(1024).decode()
+                    if response_check == 'Y':
+                        con2.send("yesrecv".encode())
+                        chatroom(user,con,con2)
+                        break
+                    elif response_check == 'N':
+                        
+                        con2.send("norecv".encode())
+                        break        
+
+
+                        
         except (OSError, ConnectionResetError): 
             try:  
                 condict.pop(user)
