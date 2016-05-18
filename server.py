@@ -43,39 +43,49 @@ class checklogin(Thread):
         # condb.execute('''CREATE TABLE user (ID INTEGER PRIMARY KEY, NAME TEXT, PASSWORD TEXT);''')
         con = self.con
         while True:
-            do = con.recv(1024).decode()
-            print(do)
+            try:
+                do = con.recv(1024).decode()
+                
 
-            
-            if re.match('new (.*),(.*)',do) :
-                domessage = re.match('new (.*),(.*)',do) 
-                user = domessage.group(1)
-                pw = domessage.group(2)
-                sql = "SELECT * from user WHERE NAME = '{}'".format(user)
-                result = condb.execute(sql)
-                rowcount = len(result.fetchall())
-                if rowcount == 0:
-                    sql = "INSERT INTO user (NAME,PASSWORD)  VALUES ('{}','{}') ".format(user,pw)
-                    condb.execute(sql)
-                    for row in condb.execute("SELECT * FROM user"):
-                        print (row)
-                    condb.commit()
-                    con.send(b'1')
-                else :
-                    con.send(b'0')
-            elif re.match('login (.*),(.*)',do):
-                domessage = re.match('login (.*),(.*)',do) 
-                user = domessage.group(1)
-                pw = domessage.group(2)
-                sql = "SELECT * from user WHERE NAME = '{}'".format(user)
-                for row in condb.execute(sql):
-                    if row[2] == pw:
-                        print (row)
+                
+                if re.match('new (.*),(.*)',do) :
+                    domessage = re.match('new (.*),(.*)',do) 
+                    user = domessage.group(1)
+                    pw = domessage.group(2)
+                    sql = "SELECT * from user WHERE NAME = '{}'".format(user)
+                    result = condb.execute(sql)
+                    rowcount = len(result.fetchall())
+                    if rowcount == 0:
+                        sql = "INSERT INTO user (NAME,PASSWORD)  VALUES ('{}','{}') ".format(user,pw)
+                        condb.execute(sql)
+                        for row in condb.execute("SELECT * FROM user"):
+                            print (row)
+                        condb.commit()
                         con.send(b'1')
-                        condict[user] = con
-                        service(user,con,condb)
-                    else:
+                    else :
                         con.send(b'0')
+                elif re.match('login (.*),(.*)',do):
+                    domessage = re.match('login (.*),(.*)',do) 
+                    user = domessage.group(1)
+                    pw = domessage.group(2)
+                    sql = "SELECT * from user WHERE NAME = '{}'".format(user)
+                    for row in condb.execute(sql):
+                        if row[2] == pw:
+                            print (row)
+                            con.send(b'1')
+                            condict[user] = con
+                            service(user,con,condb)
+                            break
+                        else:
+                            con.send(b'0')
+            except (OSError, ConnectionResetError): 
+                try:  
+                    con.close()
+                                   
+                except:  
+                    pass
+                exit()
+                return
             
 
 def service(user,con,condb):
@@ -160,21 +170,21 @@ def service(user,con,condb):
                 while True:
                     response_check = con.recv(1024).decode()
                     if response_check == "yesrecv":
-                        
                         con.send("transmissionfile".encode())
                         filesize = con.recv(1024).decode()
                         con2.send(filesize.encode())
                         fcsize = 0
-                        while True:
-                            data = con.recv(1024)
+                        while fcsize < int(filesize):
+                            data = con.recv(int(filesize)-fcsize)
                             fcsize += len(data) 
                             if not data:
-                                con.send("end of file transmisson")
+                                break
                             else:
                                 con2.send(data)
-                                progressMsg = "\r {}% of {} transmitted...".format(fcsize/filesize*100,sendfileMsg.group(2))
+                                progressMsg = "\r {}% of {} transmitted...".format(fcsize/int(filesize)*100,sendfileMsg.group(2))
                                 con.send(progressMsg.encode())
-                            
+                        
+                        con.send("end of file transmisson".encode())    
                         break
                     elif response_check == "norecv":
                         responseno = "{} Response NO!".format(talkWho)
@@ -188,8 +198,10 @@ def service(user,con,condb):
                 while True:
                     response_check = con.recv(1024).decode()
                     if response_check == 'Y':
+                        recvsignMsg = "recvsign {}".format(recvfileMsg.group(2))
+                        con.send(recvsignMsg.encode())
                         con2.send("yesrecv".encode())
-                        chatroom(user,con,con2)
+                        
                         break
                     elif response_check == 'N':
                         
@@ -197,7 +209,9 @@ def service(user,con,condb):
                         break        
 
 
-                        
+            elif doMsg == "logout":
+                con.send(doMsg.encode())
+                break
         except (OSError, ConnectionResetError): 
             try:  
                 condict.pop(user)
@@ -205,7 +219,9 @@ def service(user,con,condb):
             except:  
                 pass
             con.close() 
+            exit()
             return
+            
 def chatroom(user,con,con2):
     con.send("In room".encode())
     while True:

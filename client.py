@@ -20,20 +20,21 @@ def client(address):
             login(clientsock)
         elif casecontral == 'new':
             
-                user = input("Name:")
-                pw = getpass("password:")
-                pwconfirm = getpass("confirm password:")
-                if(pw != pwconfirm):
-                    print ("error")
+            user = input("Name:")
+            pw = getpass("password:")
+            pwconfirm = getpass("confirm password:")
+            if(pw != pwconfirm):
+                print ("error")
+            else:
+                domessage = 'new {},{}'.format(user,pw)
+                
+                clientsock.send(domessage.encode())
+                check = clientsock.recv(1024).decode()
+                if check == '0':
+                    print("Name is used!")
                 else:
-                    domessage = 'new {},{}'.format(user,pw)
-                    print(domessage)
-                    clientsock.send(domessage.encode())
-                    check = clientsock.recv(1024).decode()
-                    if check == '0':
-                        print("Name is used!")
-                    else:
-                        mainroom(clientsock,user)
+                    mainroom(clientsock,user)
+                    
 
 
 def login(clientsock):
@@ -45,7 +46,9 @@ def login(clientsock):
         clientsock.send(domessage.encode())
         check = clientsock.recv(1024).decode()
         if check == '1':
+            print("0.0")
             mainroom(clientsock,user)
+            break
         else:
             print("error")
 def mainroom(clientsock,user):
@@ -56,7 +59,8 @@ def mainroom(clientsock,user):
     for t in threads :  
         t.setDaemon(True)  
         t.start()  
-    t.join()  
+    t.join()
+    
 
 
 def sendThreadFunc(clientsock,user):
@@ -67,20 +71,29 @@ def sendThreadFunc(clientsock,user):
         doMsg = input("")
         if re.match('sendfile (.*) (.*)',doMsg):
             getfileMsg = re.match('sendfile (.*) (.*)',doMsg)
+            if not os.path.isfile(getfileMsg.group(2)):
+                print("Error")
+                continue
             clientsock.send(doMsg.encode())
-            while True:
-                if not paused:
-                    break
-            f = open (getfileMsg.group(2),'rb')
-            bin = f.read()
-            fsize = len(bin)
-            con.send(str(fsize).encode())
-            time.sleep(0.2)
-            con.sendall(bin)
             paused = True
             while True:
                 if not paused:
                     break
+            
+            f = open (getfileMsg.group(2),'rb')
+            bin = f.read()
+            fsize = len(bin)
+            clientsock.send(str(fsize).encode())
+            time.sleep(0.2)
+            clientsock.sendall(bin)
+            paused = True
+            while True:
+                
+                if not paused:
+                    break
+        elif doMsg == "logout":
+           clientsock.send(doMsg.encode())
+           break
         else:
             clientsock.send(doMsg.encode())
         time.sleep(0.2)
@@ -105,7 +118,7 @@ def recvThreadFunc(clientsock,user):
             
         elif re.match('(.*) sendfile (.*)',recvMsg):
             recvfileMsg = re.match('(.*) sendfile (.*)',recvMsg)
-            clientsock.send(recvfileMsg.encode())
+            clientsock.send(recvMsg.encode())
             print("\n {} send {} to you, Y or N:".format(recvfileMsg.group(1),recvfileMsg.group(2)), end="")
             
         elif recvMsg == 'yesrecv' or recvMsg == 'norecv':
@@ -115,10 +128,38 @@ def recvThreadFunc(clientsock,user):
             paused = False
             while True:
                 recvMsg = clientsock.recv(1024).decode()
-                print(recvMsg, end="")
-                if recvMsg == "end of file transmisson":
-                    print(recvMsg)
+                
+                if recvMsg == "end of file transmisson":                   
+                    print("\n"+recvMsg)
                     break
+                else:
+                    print(recvMsg, end="")
+            paused = False
+
+            
+        elif re.match('recvsign (.*)',recvMsg):
+            recvsignMsg = re.match('recvsign (.*)',recvMsg)
+            filesizeMsg = int(clientsock.recv(1024).decode())
+            data = b''
+            fcsize = 0
+            while fcsize < filesizeMsg:
+                packet = clientsock.recv(filesizeMsg-fcsize)
+                data += packet
+                fcsize = len(data)
+                
+                if not packet:
+
+                    break
+                    
+                else:
+                    print("\r {}% of {} transmitted...".format(fcsize/filesizeMsg*100,recvsignMsg.group(1)),end="")
+                   
+            print("\nend of file transmisson")
+            f = open(recvsignMsg.group(1),'wb')
+            f.write(data)
+            f.close()
+        elif recvMsg == "logout":
+            break
         else:
             print(recvMsg)
 
