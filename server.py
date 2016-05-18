@@ -91,7 +91,7 @@ def service(user,con,condb):
    
         try:
             doMsg = con.recv(1024).decode() 
-            print("0.0")
+            
             if doMsg ==  "friend list":
                 friendlist(user,con,condb)
             elif re.match('friend add (.*)',doMsg):
@@ -116,7 +116,7 @@ def service(user,con,condb):
                     condb.execute("INSERT INTO message (USER,Sendto,Msg)  VALUES ('{}','{}','{}') ".format(user,sendMsg.group(1),sendMsg.group(2)))
                     condb.commit()
             elif re.match('talk (.*)',doMsg):
-                print("0.0")
+                
                 talkMsg = re.match('talk (.*)',doMsg)
                 talkWho = talkMsg.group(1)
                 con2 = condict.get(talkWho)
