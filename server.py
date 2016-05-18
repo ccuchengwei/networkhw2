@@ -110,12 +110,39 @@ def service(user,con,condb):
                 sendMsg = re.match('send (.*) (.*)',doMsg)
                 if condict.get(sendMsg.group(1)):
                     con2 = condict.get(sendMsg.group(1))
-                    con2Msg = "\nMessage from {}: {} \ndo:".format(user,sendMsg.group(2))
+                    con2Msg = "\nMessage from {}: {} ".format(user,sendMsg.group(2))
                     con2.send(con2Msg.encode())
                 else :
                     condb.execute("INSERT INTO message (USER,Sendto,Msg)  VALUES ('{}','{}','{}') ".format(user,sendMsg.group(1),sendMsg.group(2)))
                     condb.commit()
             elif re.match('talk (.*)',doMsg):
+                print("0.0")
+                talkMsg = re.match('talk (.*)',doMsg)
+                talkWho = talkMsg.group(1)
+                con2 = condict.get(talkWho)
+                inviteMsg = "invitetalk from {}".format(user)
+                con2.send(inviteMsg.encode())
+                con.send("\nwaiting for response...".encode())
+                while True:
+                    response_check = con.recv(1024).decode()
+                    if response_check == "yestalk":
+                        chatroom(user,con,con2)
+                        break
+                
+            elif re.match('invitetalk from (.*)',doMsg):
+                talkMsg = re.match('invitetalk from (.*)',doMsg)
+                talkWho = talkMsg.group(1)
+                con2 = condict.get(talkWho)
+                
+                while True:
+                    response_check = con.recv(1024).decode()
+                    if response_check == 'Y':
+                        con2.send("yestalk".encode())
+                        chatroom(user,con,con2)
+                        break
+                    
+                    
+                
             
         except (OSError, ConnectionResetError): 
             try:  
@@ -125,7 +152,19 @@ def service(user,con,condb):
                 pass
             con.close() 
             return
-
+def chatroom(user,con,con2):
+    con.send("In room".encode())
+    while True:
+        sendMsg = con.recv(1024).decode()
+        if sendMsg == 'exitroom':
+            sendMsg = 'endtalkwith {}'.format(user)
+            con2.send(sendMsg.encode())
+            break
+        elif re.match('endtalkwith (.*)',sendMsg):
+            break
+        else:
+            sendMsg = "{}:{}".format(user,sendMsg)
+            con2.send(sendMsg.encode())
 def friendlist(user,con,condb):
     # condb.execute('''CREATE TABLE friend_list (ID INTEGER PRIMARY KEY, NAME TEXT, Friend TEXT);''')
     sql = "SELECT * FROM friend_list WHERE NAME = '{}'".format(user)

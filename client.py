@@ -63,7 +63,7 @@ def sendThreadFunc(clientsock,user):
     time.sleep(0.2)
     check = 0
     while True: 
-        doMsg = input("do:")
+        doMsg = input("")
         clientsock.send(doMsg.encode())
         time.sleep(0.2)
         
@@ -71,7 +71,18 @@ def sendThreadFunc(clientsock,user):
 def recvThreadFunc(clientsock,user):
     while True:
         recvMsg = clientsock.recv(1024).decode()
-        print(recvMsg)
+        if re.match('invitetalk from (.*)',recvMsg):
+            inviteMsg = re.match('invitetalk from (.*)',recvMsg)
+            clientsock.send(recvMsg.encode())
+            print("\n {} Y or N:".format(inviteMsg.group(1)), end="")
+        elif recvMsg == 'yestalk':
+            clientsock.send(recvMsg.encode())
+        elif re.match('endtalkwith (.*)',recvMsg):
+            clientsock.send(recvMsg.encode())
+            exitMsg = re.match('endtalkwith (.*)',recvMsg)
+            print("{} exit room,end talk!".format(exitMsg.group(1)))
+        else:
+            print(recvMsg)
 
 
 
