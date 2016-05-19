@@ -7,7 +7,7 @@ from threading import Thread
 
 
 condict = dict()
-def server(address):
+def server(address,port):
     
     slisten = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     
@@ -15,7 +15,7 @@ def server(address):
     try:
         slisten.bind(address)    
     except Exception as e:
-        print('port {} in use...'.format(args.sp))
+        print('port {} in use...'.format(port))
         slisten.close()
         input('press any key to quit...')
         exit()
@@ -69,6 +69,12 @@ class checklogin(Thread):
                     user = domessage.group(1)
                     pw = domessage.group(2)
                     sql = "SELECT * from user WHERE NAME = '{}'".format(user)
+                    size = condb.execute(sql)
+                    size = size.fetchall()
+                    
+                    if len(size) == 0:
+                        con.send(b'0')
+                        
                     for row in condb.execute(sql):
                         if row[2] == pw:
                             print (row)
@@ -78,6 +84,7 @@ class checklogin(Thread):
                             break
                         else:
                             con.send(b'0')
+                            break
             except (OSError, ConnectionResetError): 
                 try:  
                     con.close()
@@ -115,9 +122,10 @@ def service(user,con,condb):
                 condb.commit()
                 for row in condb.execute("SELECT * FROM friend_list"):
                     print (row)
-            elif re.match('send (.*) (.*)',doMsg):
+            elif re.match('send (.*?) (.*)',doMsg):
                 
-                sendMsg = re.match('send (.*) (.*)',doMsg)
+                sendMsg = re.match('send (.*?) (.*)',doMsg)
+               
                 if condict.get(sendMsg.group(1)):
                     con2 = condict.get(sendMsg.group(1))
                     con2Msg = "\nMessage from {}: {} ".format(user,sendMsg.group(2))
@@ -256,9 +264,9 @@ def friendlist(user,con,condb):
 if  __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Messenger')
-    parser.add_argument('-host', help="IP or hostname",default='127.0.0.1')
+    parser.add_argument('-host', help="IP or hostname",default='0.0.0.0')
     parser.add_argument('-p' , help='server port default 1060',type = int,default='1060')
     args=parser.parse_args()
     address = (args.host , args.p)
-    server(address)
+    server(address,args.p)
  

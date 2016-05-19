@@ -35,6 +35,7 @@ def client(address):
                 else:
                     mainroom(clientsock,user)
                     
+                    
 
 
 def login(clientsock):
@@ -42,15 +43,16 @@ def login(clientsock):
         user = input("Name:")
         pw = getpass("password:")
         domessage = 'login {},{}'.format(user,pw)
-        print(domessage)
+        
         clientsock.send(domessage.encode())
         check = clientsock.recv(1024).decode()
         if check == '1':
-            print("0.0")
+            
             mainroom(clientsock,user)
             break
         else:
             print("error")
+            break
 def mainroom(clientsock,user):
     print("Welcome "+user)
     th1 = threading.Thread(target=sendThreadFunc,args=(clientsock,user))  
